@@ -6,6 +6,10 @@ import styles from "./Movie.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons"; 
 import React, {useState, useEffect} from 'react';
+import userInfiniteScroll from "../../utils/useInfiniteScroll";
+import { moviesApi } from "../../api/movie";
+import uniqBy from 'lodash/uniqBy';
+import { totalmem } from "os";
 
 interface MoivePresenterProps {
     nowPlaying: any[] | null;
@@ -41,6 +45,50 @@ const MoivePresenter: React.FC<MoivePresenterProps> = ({
     const [nowPlayingMovies, setnowPlayingMovies] = useState<any[]>([]);
     const [upcomingMovies, setupcomingMovies] = useState<any[]>([]);
     const [topRatedMovies, settopRatedMovies] = useState<any[]>([]);
+
+    const page = userInfiniteScroll();
+
+    const getInfiniteApi = async() : Promise<void> => {
+        if(page !== 1){
+            try{
+                let newMovies : any[] = [];
+                if(pathname === "/movie"){
+                    const{data} = await moviesApi.popularInfinite(page);
+                    newMovies = data.results;
+                } else if(pathname === "/movie/now-playing"){
+                    const {data} = await moviesApi.popularInfinite(page);
+                    newMovies = data.results;
+                } else if(pathname === "/movie/upcoming"){
+                    const {data} = await moviesApi.popularInfinite(page);
+                    newMovies = data.results;
+                } else if(pathname === "/movie/top-rated"){
+                    const {data} = await moviesApi.popularInfinite(page);
+                    newMovies = data.results;
+                }
+
+                const totalMovies = [...popularMovies, ...newMovies];
+                const uniqByMovies = uniqBy(totalMovies, "id");
+
+                if(pathname === "/movie"){
+                    setpopularMovies(uniqByMovies);
+                } else if (pathname === "/movie/now-playing"){
+                    setnowPlayingMovies(uniqByMovies);
+                } else if (pathname === "/movie/upcoming"){
+                    setupcomingMovies(uniqByMovies);
+                } else if (pathname === "/movie/top-rated"){
+                    settopRatedMovies(uniqByMovies);
+                }
+            }
+            catch(err){
+                console.log(err);
+            }
+        }
+    }
+
+    useEffect(() => {
+        getInfiniteApi();
+    }, [page]);
+
 
     return loading ? (
             <Loader/>
